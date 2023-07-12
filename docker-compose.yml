@@ -1,0 +1,14 @@
+version: "3.0"
+services:
+  redis:
+    image: redis
+    container_name: fcfs_redis
+    restart: always
+    ports:
+      - 6379:6379
+    command: redis-server --maxmemory 2G --maxmemory-policy allkeys-lru
+    networks:
+      - local_network
+
+networks:
+  local_network:
