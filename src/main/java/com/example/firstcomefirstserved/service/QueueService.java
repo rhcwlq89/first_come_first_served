@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,11 +23,32 @@ public class QueueService {
     }
 
 
-    public long ranking(String uuid) {
+    public Long ranking(String uuid) {
         return redisService.ranking(UUID.fromString(uuid));
     }
 
     public Set<UUID> publish() {
-        return redisService.publish();
+        Set publish = redisService.publish();
+        publish.forEach(uuid -> {
+            UUID uuid1 = UUID.fromString(String.valueOf(uuid));
+            redisService.dequeue(uuid1);
+            redisService.enqueueProcessing(uuid1, System.currentTimeMillis());
+        });
+
+        return publish;
+    }
+
+    public UUID processing() {
+        Set<String> strings = redisService.publishProcessing();
+        if (strings.isEmpty()) {
+            return null;
+        }
+
+        String s = strings.iterator().next();
+        UUID uuid = UUID.fromString(s);
+        log.info("processing uuid: {}", uuid);
+        redisService.dequeueProcessing(uuid);
+
+        return uuid;
     }
 }
